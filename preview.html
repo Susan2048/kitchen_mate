@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KitchenMate Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      body { margin: 0; font-family: 'Inter', sans-serif; background: #f5f5f5; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="module">
+      async function loadApp() {
+        const res = await fetch('/src/App.tsx');
+        let src = await res.text();
+        src = src.replace(/import React[^\n]*\n/, '');
+        const prefix = 'const React = window.React;\nconst { useEffect, useMemo, useRef, useState } = React;\n';
+        src = prefix + src.replace('export default function KitchenMateApp', 'function KitchenMateApp');
+        const renderCode = `\nconst root = ReactDOM.createRoot(document.getElementById("root"));\nroot.render(React.createElement(KitchenMateApp));`;
+        const transformed = Babel.transform(src + renderCode, {
+          presets: ['env', 'react', 'typescript'],
+          filename: 'App.tsx'
+        }).code;
+        const fn = new Function('React', 'ReactDOM', transformed + '\nreturn { KitchenMateApp };');
+        return fn(window.React, window.ReactDOM);
+      }
+      loadApp().catch((err) => {
+        console.error('Failed to load app', err);
+        const root = document.getElementById('root');
+        if (root) root.innerHTML = '<pre>' + err + '</pre>';
+      });
+    </script>
+  </body>
+</html>
